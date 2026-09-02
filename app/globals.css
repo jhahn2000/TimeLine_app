@@ -667,6 +667,29 @@ aside h3 button,
 .record-actions button:hover { background:var(--pale); }
 .record-actions button.delete { color:#a84236; }
 .record-actions button svg { width:13px; height:13px; }
+.imported-records { margin-top:14px; }
+.merge-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 12px 42px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--pale); color:var(--muted); font-size:12px; }
+.merge-bar button { border:0; border-radius:9px; padding:8px 10px; background:var(--green); color:#fff; font-weight:bold; cursor:pointer; white-space:nowrap; }
+.merge-bar button:disabled { opacity:.45; cursor:not-allowed; }
+.timeline-record { display:grid; grid-template-columns:96px 1fr; gap:12px; margin-bottom:12px; }
+.timeline-record .record-time { padding:17px 0 0; text-align:right; color:var(--muted); font:13px Georgia,serif; }
+.timeline-record .record-time span { display:block; margin-top:4px; font-size:11px; }
+.timeline-record .record-body { position:relative; border:1px solid var(--line); border-radius:15px; padding:16px; background:#fff; }
+.timeline-record.activity .record-body { border-left:4px solid var(--coral); }
+.timeline-record.visit .record-body { border-left:4px solid var(--green); }
+.timeline-record small { color:var(--coral); font-size:11px; font-weight:bold; }
+.timeline-record h3 { margin:5px 0 10px; }
+.timeline-record p { margin:5px 0; color:var(--muted); font-size:12px; line-height:1.55; }
+.movement-detail { display:grid; grid-template-columns:1fr 1fr; gap:1px 14px; }
+.move-check { float:right; display:flex; align-items:center; gap:5px; color:var(--green); font-size:12px; font-weight:bold; cursor:pointer; }
+.move-check svg { width:15px; }
+.merge-preview { margin-bottom:15px; padding:14px; border-radius:12px; background:var(--pale); }
+.merge-preview p { margin:7px 0 0; color:var(--muted); font-size:12px; }
+.merge-preview .merge-warning { color:#9a4c3b; font-weight:bold; }
+.merge-confirm { flex-direction:row!important; align-items:flex-start; padding:12px; border:1px solid var(--coral); border-radius:10px; color:#8b493b; line-height:1.5; }
+.merge-confirm input { margin-top:2px; }
+.calculated-time { margin:-5px 0 0; color:var(--muted); font-size:12px; }
+.undo-toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:69; border:1px solid var(--green); border-radius:12px; padding:12px 16px; background:#fff; color:var(--green); font-weight:bold; cursor:pointer; box-shadow:0 6px 22px #173b3522; }
 .day-empty { min-height:260px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:8px; color:var(--muted); }
 .day-empty svg { color:var(--green); width:30px; }
 .day-empty span { font-size:13px; }
@@ -762,4 +785,10 @@ aside h3 button,
   .calendar-card,.day-diary { padding:14px; }
   .month-grid>button,.month-grid>span { min-height:54px; padding:7px; }
   .import-actions { grid-template-columns:1fr; }
+  .merge-bar { margin-left:0; align-items:stretch; flex-direction:column; }
+  .timeline-record { grid-template-columns:1fr; gap:0; }
+  .timeline-record .record-time { padding:5px 8px; text-align:left; }
+  .timeline-record .record-time span { display:inline; margin-left:5px; }
+  .movement-detail { grid-template-columns:1fr; }
+  .move-check { float:none; margin-bottom:9px; }
 }
