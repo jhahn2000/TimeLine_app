@@ -219,21 +219,22 @@ export default function Home() {
         const result=await saved.json();if(!saved.ok)throw new Error(result.error||"일정을 저장하지 못했습니다.");
         setCalendarMonth(fromDate.slice(0,7));setSelectedDate(fromDate);setView("calendar");setTimelineForm(false);setNotice(`${result.count}개의 일정을 날짜별 일기에 저장했습니다.`);setBusy(false);return;
       }
-      const response = await fetch("/api/trips", {
+      const response = await fetch("/api/timeline-import", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          title: String(f.get("title") || "구글 타임라인 여행"),
-          location: String(f.get("location") || selectedRecords[0].startPlace || selectedRecords[0].title),
-          startDate: fromDate,
-          endDate: toDate,
-          memo: `${fromDate}부터 ${toDate}까지 구글 지도 타임라인에서 가져온 여행`,
+          trip: {
+            title: String(f.get("title") || "구글 타임라인 여행"),
+            location: String(f.get("location") || selectedRecords[0].startPlace || selectedRecords[0].title),
+            startDate: fromDate,
+            endDate: toDate,
+            memo: `${fromDate}부터 ${toDate}까지 구글 지도 타임라인에서 가져온 여행`,
+          },
+          records:selectedRecords,
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error("여행을 저장하지 못했습니다.");
-      const saved=await fetch("/api/timeline-records",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({tripId:data.trip.id,records:selectedRecords})});
-      if(!saved.ok)throw new Error("여행은 만들었지만 기록을 저장하지 못했습니다. 빈 여행은 삭제하지 않았습니다.");
+      if (!response.ok) throw new Error(data.error||"여행과 기록을 저장하지 못했습니다.");
       setTrips((old) => [data.trip, ...old]);
       setSid(data.trip.id);
       setTimelineForm(false);
@@ -540,7 +541,7 @@ export default function Home() {
               <label>가져올 시작일<input name="fromDate" type="date" required /></label>
               <label>가져올 종료일<input name="toDate" type="date" required /></label>
             </div>
-            <label className="upload timeline-upload"><Upload />타임라인 JSON 파일 선택<input name="timeline" type="file" accept="application/json,.json" required /></label>
+            <label className="upload timeline-upload"><Upload />최신 타임라인 파일 선택<input name="timeline" type="file" required /></label>
             <p className="privacy-note">파일 내용은 여행 일정을 만드는 용도로만 처리되며, 원본 파일은 별도로 보관하지 않습니다.</p>
             <div className="import-actions">
               <button className="diary-button" name="mode" value="diary" disabled={busy}><CalendarDays />{busy ? "저장 중…" : "일정일기에 날짜별 저장"}</button>
