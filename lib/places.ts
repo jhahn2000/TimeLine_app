@@ -1,0 +1,8 @@
+export type SavedPlace={id?:number;name:string;address:string;lat:number;lng:number;radiusMeters:number};
+export type PlaceCandidate=SavedPlace&{distanceMeters:number};
+
+export const PLACEHOLDER="장소명 입력 필요";
+export function choosePlaceName(input:{manual?:string;favorite?:string;google?:string;suggested?:string}){return [input.manual,input.favorite,input.google,input.suggested].find(value=>!isCoordinateName(value))?.trim()||PLACEHOLDER}
+export function isCoordinateName(value:string|null|undefined){const text=(value||"").trim();return !text||text===PLACEHOLDER||/^geo:\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?$/i.test(text)||/^-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?$/.test(text)||/^위치\s+-?\d/.test(text)}
+export function distanceMeters(a:{lat:number;lng:number},b:{lat:number;lng:number}){const rad=(n:number)=>n*Math.PI/180,dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng),v=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;return 6371000*2*Math.atan2(Math.sqrt(v),Math.sqrt(1-v))}
+export function matchSavedPlace(lat:number,lng:number,places:SavedPlace[]){const candidates:PlaceCandidate[]=places.map(place=>({...place,distanceMeters:distanceMeters({lat,lng},place)})).filter(place=>place.distanceMeters<=Math.max(1,place.radiusMeters||15)).sort((a,b)=>a.distanceMeters-b.distanceMeters);if(!candidates.length)return{match:null,candidates:[],ambiguous:false};const close=candidates.length>1&&candidates[1].distanceMeters-candidates[0].distanceMeters<=Math.max(3,candidates[0].distanceMeters*.25);return{match:close?null:candidates[0],candidates:close?candidates.slice(0,3):[candidates[0]],ambiguous:close}}

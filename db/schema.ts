@@ -8,8 +8,12 @@ export const timelineRecords=sqliteTable("timeline_records",{
   entryDate:text("entry_date").notNull(),recordType:text("record_type").notNull(),title:text("title").notNull(),note:text("note").notNull().default(""),
   startTime:text("start_time").notNull(),endTime:text("end_time"),transportType:text("transport_type"),originalTransportType:text("original_transport_type"),distanceMeters:integer("distance_meters"),
   startPlace:text("start_place"),endPlace:text("end_place"),startLat:text("start_lat"),startLng:text("start_lng"),endLat:text("end_lat"),endLng:text("end_lng"),
-  sourceId:text("source_id"),createdAt:text("created_at").notNull().default("CURRENT_TIMESTAMP")
+  sourceId:text("source_id"),placeNameSource:text("place_name_source").notNull().default("unknown"),confirmedPlaceId:integer("confirmed_place_id"),createdAt:text("created_at").notNull().default("CURRENT_TIMESTAMP")
 },(table)=>[index("idx_timeline_records_date").on(table.entryDate),index("idx_timeline_records_trip").on(table.tripId)]);
 export const timelineMergeHistory=sqliteTable("timeline_merge_history",{
   id:integer("id").primaryKey({autoIncrement:true}),mergeToken:text("merge_token").notNull().unique(),originalRecords:text("original_records").notNull(),createdAt:text("created_at").notNull().default("CURRENT_TIMESTAMP"),undoneAt:text("undone_at")
 });
+export const favoritePlaces=sqliteTable("favorite_places",{id:integer("id").primaryKey({autoIncrement:true}),name:text("name").notNull(),address:text("address").notNull().default(""),lat:text("lat").notNull(),lng:text("lng").notNull(),radiusMeters:integer("radius_meters").notNull().default(15),createdAt:text("created_at").notNull().default("CURRENT_TIMESTAMP"),updatedAt:text("updated_at").notNull().default("CURRENT_TIMESTAMP")},(table)=>[index("idx_favorite_places_coords").on(table.lat,table.lng)]);
+export const notVisitRecords=sqliteTable("not_visit_records",{
+  id:integer("id").primaryKey({autoIncrement:true}),timelineRecordId:integer("timeline_record_id").notNull().unique(),tripId:integer("trip_id"),entryDate:text("entry_date").notNull(),title:text("title").notNull(),note:text("note").notNull().default(""),startTime:text("start_time").notNull(),endTime:text("end_time"),startPlace:text("start_place"),startLat:text("start_lat"),startLng:text("start_lng"),sourceId:text("source_id"),reason:text("reason"),reasonDetail:text("reason_detail"),createdAt:text("created_at").notNull().default("CURRENT_TIMESTAMP")
+},(table)=>[index("idx_not_visit_records_trip").on(table.tripId),index("idx_not_visit_records_date").on(table.entryDate)]);

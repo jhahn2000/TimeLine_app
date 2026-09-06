@@ -1,0 +1,10 @@
+import {asc,eq} from "drizzle-orm";
+import {getDb} from "../../../db";
+import {favoritePlaces,timelineRecords} from "../../../db/schema";
+import {isCoordinateName,matchSavedPlace,type SavedPlace} from "../../../lib/places";
+
+type Input={id?:number;recordType?:string;title?:string;startPlace?:string|null;startLat?:string|null;startLng?:string|null;placeNameSource?:string};
+async function saved(){return (await getDb().select().from(favoritePlaces).orderBy(asc(favoritePlaces.id))).map(p=>({...p,lat:Number(p.lat),lng:Number(p.lng)}) as SavedPlace)}
+function preview(records:Input[],places:SavedPlace[]){return records.filter(r=>r.recordType==="visit").map(record=>{const lat=Number(record.startLat),lng=Number(record.startLng),manual=record.placeNameSource==="manual"||(record.placeNameSource==="unknown"&&!isCoordinateName(record.title));if(manual||!Number.isFinite(lat)||!Number.isFinite(lng))return null;const found=matchSavedPlace(lat,lng,places);return found.match?{id:record.id,before:record.title||"장소명 입력 필요",after:found.match.name,address:found.match.address,placeId:found.match.id,distanceMeters:Math.round(found.match.distanceMeters)}:found.ambiguous?{id:record.id,before:record.title||"장소명 입력 필요",ambiguous:true,candidates:found.candidates.map(p=>({id:p.id,name:p.name,address:p.address,distanceMeters:Math.round(p.distanceMeters)}))}:null}).filter(Boolean)}
+export async function POST(request:Request){try{const body=await request.json() as {records?:Input[]};return Response.json({changes:preview(body.records||[],await saved())})}catch{return Response.json({error:"저장 장소와 비교하지 못했습니다."},{status:500})}}
+export async function GET(request:Request){try{const tripId=Number(new URL(request.url).searchParams.get("tripId"));if(!tripId)return Response.json({error:"여행을 선택해주세요."},{status:400});const records=await getDb().select().from(timelineRecords).where(eq(timelineRecords.tripId,tripId));return Response.json({changes:preview(records,await saved())})}catch{return Response.json({error:"적용할 장소 목록을 만들지 못했습니다."},{status:500})}}
