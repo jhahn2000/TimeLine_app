@@ -174,7 +174,6 @@ aside h3 button,
 .title small,
 .sectionhead small,
 .cardhead small,
-.ai > small,
 .recs small {
   color: var(--coral);
   font-size: 12px;
@@ -197,13 +196,17 @@ aside h3 button,
   margin: 0;
   color: var(--muted);
 }
+.title-actions { display:flex; align-items:center; gap:9px; flex:0 0 auto; }
+.title-actions button { min-height:42px; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:11px; padding:10px 14px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.title-actions button svg { width:16px; height:16px; }
+.ai-schedule-button { border:1px solid var(--green); background:#fff; color:var(--green); }
+.ai-schedule-button:hover { background:var(--pale); }
 .overview {
   display: grid;
-  grid-template-columns: 1.8fr 0.8fr;
+  grid-template-columns: minmax(0,1fr);
   gap: 18px;
 }
-.map,
-.ai {
+.map {
   border-radius: 20px;
   overflow: hidden;
   background: #fff;
@@ -232,7 +235,7 @@ aside h3 button,
   width: 15px;
 }
 .maparea {
-  height: 330px;
+  height: clamp(390px,46vw,540px);
   position: relative;
   overflow: hidden;
   background:#e6ece6;
@@ -418,52 +421,6 @@ aside h3 button,
 }
 .map footer svg {
   width: 15px;
-}
-.ai {
-  padding: 25px;
-  background: var(--green);
-  color: white;
-}
-.ai > svg {
-  padding: 10px;
-  width: 42px;
-  height: 42px;
-  background: #ffffff17;
-  border-radius: 13px;
-  margin-bottom: 28px;
-}
-.ai > small {
-  color: #a9d6ca;
-}
-.ai h2 {
-  font:
-    27px/1.35 Georgia,
-    serif;
-}
-.ai p {
-  color: #d3e5df;
-  font-size: 14px;
-  line-height: 1.7;
-}
-.ai div {
-  font-size: 11px;
-  margin: 20px 0;
-}
-.ai button {
-  width: 100%;
-  border: 0;
-  border-radius: 10px;
-  padding: 12px;
-  background: #f7f0dc;
-  color: var(--ink);
-  font-weight: bold;
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-  cursor: pointer;
-}
-.ai button svg {
-  width: 16px;
 }
 .block {
   margin-top: 48px;
@@ -879,9 +836,6 @@ aside h3 button,
   .overview {
     grid-template-columns: 1fr;
   }
-  .ai {
-    min-height: 300px;
-  }
 }
 @media (max-width: 620px) {
   .back { padding:10px; }
@@ -925,11 +879,10 @@ aside h3 button,
   .title h1 {
     font-size: 36px;
   }
-  .title > .primary {
-    width: 100%;
-  }
+  .title-actions { width:100%; display:grid; grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr); }
+  .title-actions button { min-width:0; padding:10px 8px; font-size:12px; white-space:normal; }
   .maparea {
-    height: 275px;
+    height: 360px;
   }
   .pin span {
     display: none;

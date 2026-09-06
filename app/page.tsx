@@ -355,10 +355,10 @@ export default function Home() {
               <h1>{trip.title}</h1>
               <p>{trip.memo}</p>
             </div>
-            <button className="primary" onClick={() => setEntryForm(true)}>
-              <Camera />
-              기록 추가
-            </button>
+            <div className="title-actions">
+              <button className="primary" onClick={() => setEntryForm(true)}><Camera />기록 추가</button>
+              <button className="ai-schedule-button" onClick={() => setNotice("현재 기록으로 다음 날 일정을 만들었습니다.")}><Sparkles />다음 일정 AI로 만들기</button>
+            </div>
           </div>
           <div className="overview">
             <article className="map">
@@ -392,27 +392,6 @@ export default function Home() {
                   구글 지도
                 </button>
               </footer>
-            </article>
-            <article className="ai">
-              <Sparkles />
-              <small>AI 여행 요약</small>
-              <h2>
-                느리게 걸어서
-                <br />더 오래 남은 여행
-              </h2>
-              <p>
-                근대 거리에서 시작해 바다와 골목까지, 사진과 식사를 여유롭게
-                즐긴 하루였어요.
-              </p>
-              <div>#골목산책　#로컬맛집</div>
-              <button
-                onClick={() =>
-                  setNotice("현재 기록으로 다음 날 일정을 만들었습니다.")
-                }
-              >
-                <Sparkles />
-                다음 일정 AI로 만들기
-              </button>
             </article>
           </div>
           <section id="timeline" className="block">
