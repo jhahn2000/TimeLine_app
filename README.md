@@ -87,6 +87,17 @@ Use build commands for targeted diagnosis after a remote failure, not as part of
 
 The timeout defaults can be overridden for a controlled canary with `SITES_INSTALL_TIMEOUT`, `SITES_INSTALL_KILL_AFTER`, `SITES_BUILD_TIMEOUT`, and `SITES_BUILD_KILL_AFTER`. A timeout fails the command; the helpers never retry an unchanged install or build.
 
+## GitHub Codespaces
+
+The repository includes a ready-to-use development container in `.devcontainer/devcontainer.json`.
+
+1. Open the repository on GitHub and choose **Code → Codespaces → Create codespace on main**.
+2. Wait for `npm ci` to finish automatically.
+3. In the Codespaces terminal, run `npm run dev -- --host 0.0.0.0`.
+4. Open the forwarded **여행 앱 미리보기** port when Codespaces shows the notification.
+
+The forwarded preview is visible only according to the Codespace port visibility setting. Keep it private when working with personal travel data.
+
 ## Learn More
 
 - [vinext Documentation](https://github.com/cloudflare/vinext)
