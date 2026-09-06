@@ -171,10 +171,8 @@ export default function Home() {
     mapDate=mapDays.some(day=>day.date===selectedMapDate)?selectedMapDate:trip.startDate,
     activeMapDay=mapDays.find(day=>day.date===mapDate)||mapDays[0],
     mapDayIndex=Math.max(0,mapDays.findIndex(day=>day.date===mapDate)),
-    mapMovementSegments=buildMovementSegments(mapDate,visibleTimelineRecords),
-    mapBounds=buildMapBounds([...(activeMapDay?.points||[]),...mapMovementSegments.flatMap(segment=>[segment.start,segment.end])]),
+    mapBounds=buildMapBounds(activeMapDay?.points||[]),
     plottedMapPoints=plotMapPoints(activeMapDay?.points||[],mapBounds),
-    plottedMovementSegments=mapMovementSegments.map(segment=>({start:mapPosition(segment.start,mapBounds),end:mapPosition(segment.end,mapBounds)})),
     mapBackgroundUrl=openStreetMapEmbedUrl(mapBounds);
   async function addTrip(f: FormData) {
     setBusy(true);
@@ -372,14 +370,11 @@ export default function Home() {
               </div>
               <div className="maparea">
                 {mapBackgroundUrl&&<iframe className="actual-map-frame" title={`${trip.title} ${tripDayLabel(mapDayIndex+1)} 지역 지도`} src={mapBackgroundUrl} loading="lazy" tabIndex={-1}/>} 
-                {plottedMovementSegments.length>0&&<svg className="vehicle-route-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">{plottedMovementSegments.map((segment,index)=><line key={index} x1={segment.start.x} y1={segment.start.y} x2={segment.end.x} y2={segment.end.y}/>)}</svg>}
-                {plottedMapPoints.length>1&&<svg className="visit-order-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points={plottedMapPoints.map(point=>`${point.x},${point.y}`).join(" ")}/></svg>}
-                {plottedMapPoints.map((point,i)=>{const key=`${point.point.time}-${i}`,showTime=plottedMapPoints.length<=5||point.point.important||i===0||i===plottedMapPoints.length-1;return <div key={key} className={`pin route-pin${point.point.important?" important":""}${selectedMapPoint===key?" selected":""}`} style={{left:`${point.x}%`,top:`${point.y}%`}}>
-                    <button type="button" className="map-marker-dot" aria-label={`${point.point.name} ${point.point.markerText}`} onClick={()=>setSelectedMapPoint(old=>old===key?"":key)}><MapPin/></button>
-                    {showTime&&<span className={`marker-time${!point.point.important&&i!==0&&i!==plottedMapPoints.length-1?" secondary-time":""}`}>{point.point.markerText||point.point.name}</span>}
+                {plottedMapPoints.map((point,i)=>{const key=`${point.point.time}-${i}`;return <div key={key} className={`pin route-pin${point.point.important?" important":""}${selectedMapPoint===key?" selected":""}`} style={{left:`${point.x}%`,top:`${point.y}%`}}>
+                    <button type="button" className="map-marker-dot" aria-label={`${i+1}번째 방문 ${point.point.name} ${point.point.markerText}`} onClick={()=>setSelectedMapPoint(old=>old===key?"":key)}>{i+1}</button>
+                    <span className="marker-time">{point.point.markerText||point.point.name}</span>
                     {selectedMapPoint===key&&<aside className="marker-detail"><b>{point.point.name}</b><span>{point.point.detailText||"방문시간 정보 없음"}</span></aside>}
                   </div>})}
-                <small className="route-note">주황색은 차량 이동 기록, 초록색 점선은 방문 순서입니다. 실제 도로 경로선은 지도 버튼에서 확인하세요.</small>
               </div>
               <footer>
                 <button type="button" onClick={()=>beginMap("naver")}>
