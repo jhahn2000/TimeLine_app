@@ -311,14 +311,29 @@ aside h3 button,
 }
 .route-pin {
   z-index: 2;
-  transform: translate(-15px, -16px);
+  transform: translate(-16px, calc(-100% - 12px));
+}
+.route-pin::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  top: 100%;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 10px solid var(--green);
+  filter: drop-shadow(0 1px 1px #264f3f40);
+}
+.route-pin.important::after {
+  border-top-color: var(--coral);
 }
 .route-pin .map-marker-label {
   display: flex;
   align-items: center;
   gap: 6px;
   max-width: 210px;
-  padding: 5px 9px 5px 6px;
+  padding: 5px 9px 5px 5px;
   border: 1px solid #d8e3dc;
   border-radius: 999px;
   background: #fffffff2;
@@ -327,15 +342,19 @@ aside h3 button,
   box-shadow: 0 2px 6px #264f3f40;
 }
 .route-pin .map-marker-label b {
-  width: auto;
-  height: auto;
-  border-radius: 0;
-  background: transparent;
-  color: var(--green);
-  display: inline;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  display: grid;
+  place-items: center;
   flex: 0 0 auto;
-  font-size: 20px;
+  font-size: 12px;
   line-height: 1;
+}
+.route-pin.important .map-marker-label b {
+  background: var(--coral);
 }
 .route-pin .map-marker-label span {
   max-width: 170px;
