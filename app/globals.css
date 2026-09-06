@@ -767,6 +767,11 @@ aside h3 button,
 .record-actions button.delete { color:#a84236; }
 .record-actions button svg { width:13px; height:13px; }
 .imported-records { margin-top:14px; }
+.timeline-day-filter { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 12px 42px; }
+.timeline-day-filter button { display:flex; align-items:center; gap:5px; border:1px solid var(--line); border-radius:999px; padding:7px 11px; background:#fff; color:var(--green); cursor:pointer; }
+.timeline-day-filter button span { color:var(--muted); font-size:11px; }
+.timeline-day-filter button.active { border-color:var(--green); background:var(--green); color:#fff; }
+.timeline-day-filter button.active span { color:#fff; opacity:.86; }
 .merge-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 12px 42px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--pale); color:var(--muted); font-size:12px; }
 .merge-bar button { border:0; border-radius:9px; padding:8px 10px; background:var(--green); color:#fff; font-weight:bold; cursor:pointer; white-space:nowrap; }
 .merge-bar button:disabled { opacity:.45; cursor:not-allowed; }
@@ -953,6 +958,8 @@ aside h3 button,
   .month-grid>button,.month-grid>span { min-height:54px; padding:7px; }
   .import-actions { grid-template-columns:1fr; }
   .merge-bar { margin-left:0; align-items:stretch; flex-direction:column; }
+  .timeline-day-filter { margin-left:0; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; }
+  .timeline-day-filter button { flex:0 0 auto; }
   .timeline-record,.timeline-date-boundary { grid-template-columns:70px minmax(0,1fr); gap:8px; }
   .day-marker-slot { padding-top:4px; }
   .timeline-day-marker { width:64px; padding:7px 4px; }
