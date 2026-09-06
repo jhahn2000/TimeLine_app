@@ -52,6 +52,9 @@ type MapProvider="google"|"naver";
 type MapPoint={lat:number;lng:number;name:string;time:string;arrivalTime?:string;departureTime?:string;markerText:string;detailText:string;important:boolean};
 type MapDay={date:string;points:MapPoint[]};
 type MapPicker={provider:MapProvider;day?:string;routes?:MapPoint[][];fallbackUrl?:string};
+type MapCoordinate={lat:number;lng:number};
+type MapBounds={minLat:number;maxLat:number;minLng:number;maxLng:number};
+type MovementSegment={start:MapCoordinate;end:MapCoordinate};
 const demos: Trip[] = [
   {
     id: -1,
@@ -168,7 +171,11 @@ export default function Home() {
     mapDate=mapDays.some(day=>day.date===selectedMapDate)?selectedMapDate:trip.startDate,
     activeMapDay=mapDays.find(day=>day.date===mapDate)||mapDays[0],
     mapDayIndex=Math.max(0,mapDays.findIndex(day=>day.date===mapDate)),
-    plottedMapPoints=plotMapPoints(activeMapDay?.points||[]);
+    mapMovementSegments=buildMovementSegments(mapDate,visibleTimelineRecords),
+    mapBounds=buildMapBounds([...(activeMapDay?.points||[]),...mapMovementSegments.flatMap(segment=>[segment.start,segment.end])]),
+    plottedMapPoints=plotMapPoints(activeMapDay?.points||[],mapBounds),
+    plottedMovementSegments=mapMovementSegments.map(segment=>({start:mapPosition(segment.start,mapBounds),end:mapPosition(segment.end,mapBounds)})),
+    mapBackgroundUrl=openStreetMapEmbedUrl(mapBounds);
   async function addTrip(f: FormData) {
     setBusy(true);
     try {
@@ -365,14 +372,15 @@ export default function Home() {
                 </span>
               </div>
               <div className="maparea">
-                <em>금강</em>
+                {mapBackgroundUrl&&<iframe className="actual-map-frame" title={`${trip.title} ${tripDayLabel(mapDayIndex+1)} 지역 지도`} src={mapBackgroundUrl} loading="lazy" tabIndex={-1}/>} 
+                {plottedMovementSegments.length>0&&<svg className="vehicle-route-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">{plottedMovementSegments.map((segment,index)=><line key={index} x1={segment.start.x} y1={segment.start.y} x2={segment.end.x} y2={segment.end.y}/>)}</svg>}
                 {plottedMapPoints.length>1&&<svg className="visit-order-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points={plottedMapPoints.map(point=>`${point.x},${point.y}`).join(" ")}/></svg>}
                 {plottedMapPoints.map((point,i)=>{const key=`${point.point.time}-${i}`,showTime=plottedMapPoints.length<=5||point.point.important||i===0||i===plottedMapPoints.length-1;return <div key={key} className={`pin route-pin${point.point.important?" important":""}${selectedMapPoint===key?" selected":""}`} style={{left:`${point.x}%`,top:`${point.y}%`}}>
                     <button type="button" className="map-marker-dot" aria-label={`${point.point.name} ${point.point.markerText}`} onClick={()=>setSelectedMapPoint(old=>old===key?"":key)}><MapPin/></button>
                     {showTime&&<span className={`marker-time${!point.point.important&&i!==0&&i!==plottedMapPoints.length-1?" secondary-time":""}`}>{point.point.markerText||point.point.name}</span>}
                     {selectedMapPoint===key&&<aside className="marker-detail"><b>{point.point.name}</b><span>{point.point.detailText||"방문시간 정보 없음"}</span></aside>}
                   </div>})}
-                <small className="route-note">실제 도로가 아닌 방문 순서를 연결한 선입니다.</small>
+                <small className="route-note">주황색은 차량 이동 기록, 초록색 점선은 방문 순서입니다. 실제 도로 경로선은 지도 버튼에서 확인하세요.</small>
               </div>
               <footer>
                 <button type="button" onClick={()=>beginMap("naver")}>
@@ -610,7 +618,11 @@ function clock(value:string|null|undefined){return value?.includes("T")?value.sl
 function validMapPoint(latValue:string|null,lngValue:string|null,name:string|null,time:string,details:Pick<MapPoint,"arrivalTime"|"departureTime"|"markerText"|"detailText"|"important">):MapPoint|null{const lat=Number(latValue),lng=Number(lngValue);return !!latValue?.trim()&&!!lngValue?.trim()&&Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180?{lat,lng,name:name?.trim()||`${lat}, ${lng}`,time,...details}:null}
 function mapDistance(lat1:number,lng1:number,lat2:number,lng2:number){const toRad=(value:number)=>value*Math.PI/180,dLat=toRad(lat2-lat1),dLng=toRad(lng2-lng1),value=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;return 6371000*2*Math.atan2(Math.sqrt(value),Math.sqrt(1-value))}
 function sameMapPoint(a:MapPoint,b:MapPoint){const distance=mapDistance(a.lat,a.lng,b.lat,b.lng);return distance<=15||(a.name===b.name&&distance<=50)}
-function plotMapPoints(points:MapPoint[]){if(!points.length)return[];const latitudes=points.map(point=>point.lat),longitudes=points.map(point=>point.lng),minLat=Math.min(...latitudes),maxLat=Math.max(...latitudes),minLng=Math.min(...longitudes),maxLng=Math.max(...longitudes),latRange=maxLat-minLat||1,lngRange=maxLng-minLng||1;return points.map(point=>({point,x:14+(point.lng-minLng)/lngRange*68,y:14+(maxLat-point.lat)/latRange*68}))}
+function buildMapBounds(points:MapCoordinate[]):MapBounds|null{if(!points.length)return null;const minLat=Math.min(...points.map(point=>point.lat)),maxLat=Math.max(...points.map(point=>point.lat)),minLng=Math.min(...points.map(point=>point.lng)),maxLng=Math.max(...points.map(point=>point.lng)),latPadding=Math.max((maxLat-minLat)*.16,.003),lngPadding=Math.max((maxLng-minLng)*.16,.004);return{minLat:minLat-latPadding,maxLat:maxLat+latPadding,minLng:minLng-lngPadding,maxLng:maxLng+lngPadding}}
+function mapPosition(point:MapCoordinate,bounds:MapBounds|null){if(!bounds)return{x:50,y:50};const latRange=bounds.maxLat-bounds.minLat||1,lngRange=bounds.maxLng-bounds.minLng||1;return{x:(point.lng-bounds.minLng)/lngRange*100,y:(bounds.maxLat-point.lat)/latRange*100}}
+function plotMapPoints(points:MapPoint[],bounds:MapBounds|null){return points.map(point=>({point,...mapPosition(point,bounds)}))}
+function openStreetMapEmbedUrl(bounds:MapBounds|null){if(!bounds)return"";const bbox=[bounds.minLng,bounds.minLat,bounds.maxLng,bounds.maxLat].map(value=>value.toFixed(6)).join(",");return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik`}
+function buildMovementSegments(date:string,records:TimelineRecord[]):MovementSegment[]{return records.filter(record=>record.recordType==="activity"&&record.startTime.slice(0,10)===date).flatMap(record=>{if(!record.startLat?.trim()||!record.startLng?.trim()||!record.endLat?.trim()||!record.endLng?.trim())return[];const startLat=Number(record.startLat),startLng=Number(record.startLng),endLat=Number(record.endLat),endLng=Number(record.endLng),valid=[startLat,endLat].every(value=>Number.isFinite(value)&&value>=-90&&value<=90)&&[startLng,endLng].every(value=>Number.isFinite(value)&&value>=-180&&value<=180);return valid?[{start:{lat:startLat,lng:startLng},end:{lat:endLat,lng:endLng}}]:[]})}
 function buildMapDays(trip:Trip,records:TimelineRecord[]):MapDay[]{const dates=dateRange(trip.startDate,trip.endDate),visits=[...records].filter(record=>record.recordType==="visit").sort((a,b)=>a.startTime.localeCompare(b.startTime));return dates.map(date=>{const points:MapPoint[]=[];for(const record of visits){const startDate=record.startTime.slice(0,10),endDate=record.endTime?.slice(0,10),arrival=clock(record.startTime),departure=clock(record.endTime),name=resolvedMapPlaceName(record);if(startDate===date){const crossesDate=!!endDate&&endDate>date,markerText=arrival?crossesDate?`${arrival} 도착`:arrival:name,detailText=arrival?`도착 ${arrival}${departure?` · 출발 ${crossesDate?"다음 날 ":""}${departure}`:""}`:"";const point=validMapPoint(record.startLat,record.startLng,name,record.startTime,{arrivalTime:arrival,departureTime:departure,markerText,detailText,important:crossesDate});if(point)points.push(point)}else if(startDate<date&&!!endDate&&endDate===date){const markerText=departure?`${departure} 출발`:name,detailText=`${arrival?`도착 전날 ${arrival}`:""}${arrival&&departure?" · ":""}${departure?`출발 ${departure}`:""}`;const point=validMapPoint(record.startLat,record.startLng,name,`${date}T00:00:00`,{arrivalTime:arrival,departureTime:departure,markerText,detailText,important:true});if(point)points.push(point)}}const deduplicated=points.sort((a,b)=>a.time.localeCompare(b.time)).filter((point,index,list)=>index===0||!sameMapPoint(point,list[index-1]));return{date,points:deduplicated}})}
 function splitContinuous(points:MapPoint[],maxPoints:number){const routes:MapPoint[][]=[];for(let start=0;start<points.length-1;start+=maxPoints-1)routes.push(points.slice(start,Math.min(points.length,start+maxPoints)));return routes}
 function isMobileDevice(){return typeof navigator!=="undefined"&&/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)}

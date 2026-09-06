@@ -235,37 +235,30 @@ aside h3 button,
   height: 330px;
   position: relative;
   overflow: hidden;
-  background-color: #e6ece6;
-  background-image:
-    linear-gradient(
-      30deg,
-      transparent 47%,
-      white 48%,
-      white 50%,
-      transparent 51%
-    ),
-    linear-gradient(
-      105deg,
-      transparent 47%,
-      #d4dfd8 48%,
-      #d4dfd8 50%,
-      transparent 51%
-    );
-  background-size:
-    140px 110px,
-    170px 130px;
+  background:#e6ece6;
 }
-.maparea > em {
-  position: absolute;
-  right: -20px;
-  top: -20px;
-  width: 32%;
-  height: 120%;
-  background: #c9e4e5;
-  display: grid;
-  place-items: center;
-  color: #75a2a3;
-  transform: rotate(-5deg);
+.actual-map-frame {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border:0;
+  pointer-events:none;
+  filter:saturate(.75) contrast(.94) brightness(1.04);
+}
+.vehicle-route-lines {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+.vehicle-route-lines line {
+  stroke:var(--coral);
+  stroke-width:3;
+  stroke-linecap:round;
+  vector-effect:non-scaling-stroke;
+  filter:drop-shadow(0 1px 1px #fff);
 }
 .route {
   position: absolute;
@@ -308,7 +301,7 @@ aside h3 button,
 }
 .visit-order-line polyline {
   fill: none;
-  stroke: var(--coral);
+  stroke: var(--green);
   stroke-width: 1.7;
   stroke-dasharray: 3 2;
   vector-effect: non-scaling-stroke;
