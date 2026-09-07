@@ -1,5 +1,5 @@
 "use client";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {parseTimeline} from "../lib/timeline";
 import {googleDayUrl,naverAppUrl,naverWebUrl,resolvedMapPlaceName} from "../lib/map-links";
 import {
@@ -53,7 +53,7 @@ type MapPoint={lat:number;lng:number;name:string;time:string;arrivalTime?:string
 type MapDay={date:string;points:MapPoint[]};
 type MapPicker={provider:MapProvider;day?:string;fallbackUrl?:string};
 type MapCoordinate={lat:number;lng:number};
-type MapBounds={minLat:number;maxLat:number;minLng:number;maxLng:number};
+type MapBounds={minLat:number;maxLat:number;minLng:number;maxLng:number;projMinX:number;projMaxX:number;projMinY:number;projMaxY:number};
 type MovementSegment={start:MapCoordinate;end:MapCoordinate};
 const demos: Trip[] = [
   {
@@ -165,13 +165,24 @@ export default function Home() {
   useEffect(()=>{if(view!=="calendar")return;const[from,to]=monthRange(calendarMonth);fetch(`/api/daily-entries?from=${from}&to=${to}`).then(r=>r.json()).then(d=>setDailyEntries(d.entries||[])).catch(()=>setDailyEntries([]))},[view,calendarMonth]);
   useEffect(()=>{const[from,to]=monthRange(calendarMonth),url=sid>0?`/api/timeline-records?tripId=${sid}`:`/api/timeline-records?from=${from}&to=${to}`;fetch(url).then(r=>r.json()).then(d=>setTimelineRecords(d.records||[])).catch(()=>setTimelineRecords([]));setSelectedMoves([])},[view,sid,calendarMonth]);
   useEffect(()=>{if(sid<0){setNotVisits([]);return}fetch(`/api/not-visits?tripId=${sid}`).then(r=>r.json()).then(d=>setNotVisits(d.records||[])).catch(()=>setNotVisits([]))},[sid]);
+  const mapAreaRef=useRef<HTMLDivElement|null>(null),
+    [mapAreaAspect,setMapAreaAspect]=useState(2.2);
+  useEffect(()=>{
+    const el=mapAreaRef.current;
+    if(!el||typeof ResizeObserver==="undefined")return;
+    const update=()=>{if(el.clientWidth>0&&el.clientHeight>0)setMapAreaAspect(el.clientWidth/el.clientHeight)};
+    update();
+    const observer=new ResizeObserver(update);
+    observer.observe(el);
+    return()=>observer.disconnect();
+  },[]);
   const trip = trips.find((t) => t.id === sid) || trips[0],
     visibleTimelineRecords=timelineRecords.filter(record=>!notVisits.some(item=>item.timelineRecordId===record.id)),
     mapDays=buildMapDays(trip,visibleTimelineRecords),
     mapDate=mapDays.some(day=>day.date===selectedMapDate)?selectedMapDate:trip.startDate,
     activeMapDay=mapDays.find(day=>day.date===mapDate)||mapDays[0],
     mapDayIndex=Math.max(0,mapDays.findIndex(day=>day.date===mapDate)),
-    mapBounds=buildMapBounds(activeMapDay?.points||[]),
+    mapBounds=buildMapBounds(activeMapDay?.points||[],mapAreaAspect),
     plottedMapPoints=plotMapPoints(activeMapDay?.points||[],mapBounds),
     mapBackgroundUrl=openStreetMapEmbedUrl(mapBounds);
   async function addTrip(f: FormData) {
@@ -368,10 +379,10 @@ export default function Home() {
                   <Route /> {activeMapDay?.points.length||0}곳
                 </span>
               </div>
-              <div className="maparea">
+              <div className="maparea" ref={mapAreaRef}>
                 {mapBackgroundUrl&&<iframe className="actual-map-frame" title={`${trip.title} ${tripDayLabel(mapDayIndex+1)} 지역 지도`} src={mapBackgroundUrl} loading="lazy" tabIndex={-1}/>} 
                 {plottedMapPoints.map((point,i)=>{const key=`${point.point.time}-${i}`,labelTime=mapMarkerTime(point.point);return <div key={key} className={`pin route-pin${point.point.important?" important":""}${selectedMapPoint===key?" selected":""}`} style={{left:`${point.x}%`,top:`${point.y}%`}}>
-                    <button type="button" className="map-marker-label" aria-label={`${i+1}번째 방문 ${point.point.name}${labelTime?` ${labelTime}`:""}`} onClick={()=>setSelectedMapPoint(old=>old===key?"":key)}><b>{circledNumber(i+1)}</b><span>{point.point.name}{labelTime&&` (${labelTime})`}</span></button>
+                    <button type="button" className="map-marker-label" aria-label={`${i+1}번째 방문 ${point.point.name}${labelTime?` ${labelTime}`:""}`} onClick={()=>setSelectedMapPoint(old=>old===key?"":key)}><b className="pin-svg" aria-hidden="true"><svg width="30" height="40" viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id={`pinGrad-${i}`} cx="32%" cy="26%" r="80%"><stop offset="0%" stopColor="#ffffff" stopOpacity=".65"/><stop offset="40%" stopColor="currentColor" stopOpacity=".9"/><stop offset="100%" stopColor="currentColor"/></radialGradient></defs><path d="M30 0C13.4315 0 0 13.4315 0 30C0 48.75 30 80 30 80C30 80 60 48.75 60 30C60 13.4315 46.5685 0 30 0Z" fill={`url(#pinGrad-${i})`}/><circle cx="30" cy="30" r="13" fill="#fff"/><text x="30" y="35" fontFamily="sans-serif" fontSize="15" fontWeight="700" fill="currentColor" textAnchor="middle">{i+1}</text></svg></b><span>{point.point.name}{labelTime&&` (${labelTime})`}</span></button>
                     {selectedMapPoint===key&&<aside className="marker-detail"><b>{point.point.name}</b><span>{point.point.detailText||"방문시간 정보 없음"}</span></aside>}
                   </div>})}
               </div>
@@ -590,8 +601,43 @@ function clock(value:string|null|undefined){return value?.includes("T")?value.sl
 function validMapPoint(latValue:string|null,lngValue:string|null,name:string|null,time:string,details:Pick<MapPoint,"arrivalTime"|"departureTime"|"markerText"|"detailText"|"important">):MapPoint|null{const lat=Number(latValue),lng=Number(lngValue);return !!latValue?.trim()&&!!lngValue?.trim()&&Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180?{lat,lng,name:name?.trim()||`${lat}, ${lng}`,time,...details}:null}
 function mapDistance(lat1:number,lng1:number,lat2:number,lng2:number){const toRad=(value:number)=>value*Math.PI/180,dLat=toRad(lat2-lat1),dLng=toRad(lng2-lng1),value=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;return 6371000*2*Math.atan2(Math.sqrt(value),Math.sqrt(1-value))}
 function sameMapPoint(a:MapPoint,b:MapPoint){const distance=mapDistance(a.lat,a.lng,b.lat,b.lng);return distance<=15||(a.name===b.name&&distance<=50)}
-function buildMapBounds(points:MapCoordinate[]):MapBounds|null{if(!points.length)return null;const minLat=Math.min(...points.map(point=>point.lat)),maxLat=Math.max(...points.map(point=>point.lat)),minLng=Math.min(...points.map(point=>point.lng)),maxLng=Math.max(...points.map(point=>point.lng)),latPadding=Math.max((maxLat-minLat)*.16,.003),lngPadding=Math.max((maxLng-minLng)*.16,.004);return{minLat:minLat-latPadding,maxLat:maxLat+latPadding,minLng:minLng-lngPadding,maxLng:maxLng+lngPadding}}
-function mapPosition(point:MapCoordinate,bounds:MapBounds|null){if(!bounds)return{x:50,y:50};const latRange=bounds.maxLat-bounds.minLat||1,lngRange=bounds.maxLng-bounds.minLng||1;return{x:(point.lng-bounds.minLng)/lngRange*100,y:(bounds.maxLat-point.lat)/latRange*100}}
+function toRad(deg:number){return deg*Math.PI/180}
+function toDeg(rad:number){return rad*180/Math.PI}
+function mercatorY(latDeg:number){const clamped=Math.max(-85.05,Math.min(85.05,latDeg)),rad=toRad(clamped);return Math.log(Math.tan(Math.PI/4+rad/2))}
+function inverseMercatorY(y:number){return toDeg(2*Math.atan(Math.exp(y))-Math.PI/2)}
+function buildMapBounds(points:MapCoordinate[],containerAspect:number=2.2):MapBounds|null{
+  if(!points.length)return null;
+  const minLat=Math.min(...points.map(point=>point.lat)),
+    maxLat=Math.max(...points.map(point=>point.lat)),
+    minLng=Math.min(...points.map(point=>point.lng)),
+    maxLng=Math.max(...points.map(point=>point.lng)),
+    latPadding=Math.max((maxLat-minLat)*.16,.003),
+    lngPadding=Math.max((maxLng-minLng)*.16,.004),
+    paddedMinLat=minLat-latPadding,paddedMaxLat=maxLat+latPadding,
+    paddedMinLng=minLng-lngPadding,paddedMaxLng=maxLng+lngPadding;
+  let x0=toRad(paddedMinLng),x1=toRad(paddedMaxLng),
+    y0=mercatorY(paddedMinLat),y1=mercatorY(paddedMaxLat);
+  const width=x1-x0,height=y1-y0||1e-9,aspect=width/height,safeAspect=containerAspect>0?containerAspect:2.2;
+  if(aspect<safeAspect){
+    const targetWidth=safeAspect*height,extra=(targetWidth-width)/2;
+    x0-=extra;x1+=extra;
+  }else{
+    const targetHeight=width/safeAspect,extra=(targetHeight-height)/2;
+    y0-=extra;y1+=extra;
+  }
+  return{
+    minLat:inverseMercatorY(y0),maxLat:inverseMercatorY(y1),
+    minLng:toDeg(x0),maxLng:toDeg(x1),
+    projMinX:x0,projMaxX:x1,projMinY:y0,projMaxY:y1
+  };
+}
+function mapPosition(point:MapCoordinate,bounds:MapBounds|null){
+  if(!bounds)return{x:50,y:50};
+  const xRad=toRad(point.lng),yMerc=mercatorY(point.lat),
+    xRange=(bounds.projMaxX-bounds.projMinX)||1,
+    yRange=(bounds.projMaxY-bounds.projMinY)||1;
+  return{x:(xRad-bounds.projMinX)/xRange*100,y:(bounds.projMaxY-yMerc)/yRange*100}
+}
 function plotMapPoints(points:MapPoint[],bounds:MapBounds|null){return points.map(point=>({point,...mapPosition(point,bounds)}))}
 function circledNumber(value:number){return value>=1&&value<=20?String.fromCodePoint(0x2460+value-1):String(value)}
 function mapMarkerTime(point:MapPoint){return point.time.endsWith("T00:00:00")?point.departureTime||point.arrivalTime:point.arrivalTime||point.departureTime}
